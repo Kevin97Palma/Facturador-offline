@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.spec.bak
+
+# PyInstaller output — demasiado grande para git
+dist/Facturador/
+dist/*.zip
+build/
+
+# Base de datos local (no compartir)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Firmas digitales (privadas)
+data/firmas/
+*.p12
+*.pfx
+
+# Logos de empresa
+data/logos/
+
+# Configuración local (cada equipo tiene la suya)
+config.json
+
+# Logs
+*.log
+logs/
+
+# Variables de entorno
+.env
+.env.*
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+
+# Repos de referencia (no son parte del proyecto)
+AmeliaApp-master-amelia/
+AmeliaRestServer-master-amelia/
+AmeliaApp-master-amelia.zip
+AmeliaRestServer-master-amelia.zip
+
+# Settings locales de Claude
+.claude/

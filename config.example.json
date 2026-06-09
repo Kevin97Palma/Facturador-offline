@@ -1,0 +1,8 @@
+{
+  "server_url": "http://localhost:5000",
+  "mode": "servidor",
+  "printer_name": "",
+  "printer_type": "none",
+  "printer_ip": "",
+  "printer_port": 9100
+}

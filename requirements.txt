@@ -1,0 +1,20 @@
+# Servidor
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.30
+Werkzeug==3.0.3
+Flask-CORS==4.0.1
+requests==2.32.3
+python-dateutil==2.9.0
+
+# Cliente de escritorio
+PyQt5==5.15.10
+PyQt5-Qt5==5.15.13
+PyQt5-sip==12.13.0
+
+# Impresoras ESC/POS
+python-escpos==3.1
+
+# Empaquetado Windows
+pyinstaller==6.7.0
+pywin32==306
