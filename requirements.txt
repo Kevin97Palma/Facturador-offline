@@ -15,6 +15,9 @@ PyQt5-sip==12.13.0
 # Impresoras ESC/POS
 python-escpos==3.1
 
+# MySQL para backup en nube y licencias
+PyMySQL==1.1.1
+
 # Empaquetado Windows
 pyinstaller==6.7.0
 pywin32==306

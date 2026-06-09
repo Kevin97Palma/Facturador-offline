@@ -1,10 +1,10 @@
 from PyQt5.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QComboBox, QFrame, QTabWidget, QWidget, QFormLayout,
-    QFileDialog, QMessageBox, QSpinBox
+    QFileDialog, QMessageBox, QSpinBox, QGroupBox
 )
 from PyQt5.QtCore import Qt
-from ..widgets import BaseScreen, make_btn, show_info, show_error, SCREEN_STYLE
+from ..widgets import BaseScreen, make_btn, toast, LoadWorker
 from .. import api, config as cfg
 
 
@@ -97,13 +97,87 @@ class ConfiguracionScreen(BaseScreen):
         f_emp.addStretch()
         tabs.addTab(tab_empresa, 'Empresa')
 
+        # ── Tab: Nube / Backup MySQL ──────────────────────────────────────────
+        tab_cloud = QWidget()
+        f_cloud = QVBoxLayout(tab_cloud)
+        f_cloud.setSpacing(14)
+        f_cloud.setContentsMargins(16, 16, 16, 16)
+
+        # Conexión MySQL
+        grp_mysql = QGroupBox('Conexión MySQL en la Nube')
+        fm = QFormLayout(grp_mysql)
+        fm.setSpacing(10)
+
+        self.txt_mysql_host = QLineEdit(cfg.get('mysql_host', ''))
+        self.txt_mysql_host.setPlaceholderText('db.miservidor.com  ó  192.168.1.200')
+
+        self.spn_mysql_port = QSpinBox()
+        self.spn_mysql_port.setRange(1, 65535)
+        self.spn_mysql_port.setValue(int(cfg.get('mysql_port', 3306)))
+
+        self.txt_mysql_user = QLineEdit(cfg.get('mysql_user', ''))
+        self.txt_mysql_user.setPlaceholderText('facturador_app')
+
+        self.txt_mysql_pass = QLineEdit(cfg.get('mysql_password', ''))
+        self.txt_mysql_pass.setEchoMode(QLineEdit.Password)
+        self.txt_mysql_pass.setPlaceholderText('Contraseña MySQL')
+
+        self.txt_mysql_db = QLineEdit(cfg.get('mysql_database', 'facturador_cloud'))
+        self.txt_mysql_db.setPlaceholderText('facturador_cloud')
+
+        self.spn_hora_backup = QSpinBox()
+        self.spn_hora_backup.setRange(0, 23)
+        self.spn_hora_backup.setValue(int(cfg.get('hora_backup', 2)))
+        self.spn_hora_backup.setSuffix(':00 hrs')
+
+        fm.addRow('Host MySQL:', self.txt_mysql_host)
+        fm.addRow('Puerto:', self.spn_mysql_port)
+        fm.addRow('Usuario:', self.txt_mysql_user)
+        fm.addRow('Contraseña:', self.txt_mysql_pass)
+        fm.addRow('Base de datos:', self.txt_mysql_db)
+        fm.addRow('Hora backup diario:', self.spn_hora_backup)
+        f_cloud.addWidget(grp_mysql)
+
+        # Acciones
+        btn_row = QHBoxLayout()
+        btn_test_mysql = make_btn('🔌 Probar Conexión', 'secondary')
+        btn_test_mysql.clicked.connect(self._test_mysql)
+        btn_backup_now = make_btn('☁  Respaldar Ahora', 'secondary')
+        btn_backup_now.clicked.connect(self._backup_now)
+        btn_save_mysql = make_btn('Guardar Config. Nube', 'primary')
+        btn_save_mysql.clicked.connect(self._save_mysql)
+        btn_row.addWidget(btn_test_mysql)
+        btn_row.addWidget(btn_backup_now)
+        btn_row.addWidget(btn_save_mysql)
+        btn_row.addStretch()
+        f_cloud.addLayout(btn_row)
+
+        # Estado del backup
+        grp_estado = QGroupBox('Estado del Backup')
+        fe = QFormLayout(grp_estado)
+        fe.setSpacing(8)
+        self.lbl_backup_estado = QLabel('Consultando...')
+        self.lbl_backup_ultima = QLabel('—')
+        self.lbl_backup_registros = QLabel('—')
+        self.lbl_licencia = QLabel('—')
+        fe.addRow('Último resultado:', self.lbl_backup_estado)
+        fe.addRow('Última vez:', self.lbl_backup_ultima)
+        fe.addRow('Registros respaldados:', self.lbl_backup_registros)
+        fe.addRow('Licencia:', self.lbl_licencia)
+        f_cloud.addWidget(grp_estado)
+        f_cloud.addStretch()
+
+        tabs.addTab(tab_cloud, '☁ Nube')
+
+        # ─────────────────────────────────────────────────────────────────────
         lay.addWidget(tabs)
 
-        btn_save = make_btn('Guardar Configuración', 'primary')
+        btn_save = make_btn('Guardar Configuración Local', 'primary')
         btn_save.clicked.connect(self._save)
         lay.addWidget(btn_save, alignment=Qt.AlignLeft)
 
         self._on_printer_type_change()
+        self._cargar_estado_cloud()
 
     def _on_printer_type_change(self):
         pt = self.cmb_printer_type.currentData()
@@ -115,20 +189,20 @@ class ConfiguracionScreen(BaseScreen):
         url = self.txt_server_url.text().strip()
         try:
             import requests
-            r = requests.get(f'{url}/api/auth/empresas', timeout=5)
+            requests.get(f'{url}/api/auth/empresas', timeout=5)
             self.lbl_conn_status.setText('Conectado correctamente')
-            self.lbl_conn_status.setStyleSheet('color: #2ecc71;')
+            self.lbl_conn_status.setStyleSheet('color: #2ea043;')
         except Exception as e:
             self.lbl_conn_status.setText(f'Error: {e}')
-            self.lbl_conn_status.setStyleSheet('color: #e94560;')
+            self.lbl_conn_status.setStyleSheet('color: #da3633;')
 
     def _test_print(self):
         from ..printer import imprimir_prueba
         try:
             imprimir_prueba()
-            show_info(self, 'Impresión de prueba enviada')
+            toast(self, 'Impresión de prueba enviada', 'ok')
         except Exception as e:
-            show_error(self, f'Error de impresión: {e}')
+            toast(self, f'Error de impresión: {e}', 'error')
 
     def _save(self):
         c = cfg.load_config()
@@ -139,7 +213,131 @@ class ConfiguracionScreen(BaseScreen):
         c['printer_ip'] = self.txt_printer_ip.text().strip()
         c['printer_port'] = self.spn_printer_port.value()
         cfg.save_config(c)
-        show_info(self, 'Configuración guardada.\nReinicie la aplicación para aplicar cambios de URL.')
+        toast(self, 'Configuración guardada. Reinicie para aplicar cambios de URL.', 'ok')
+
+    # ── Cloud / MySQL ─────────────────────────────────────────────────────────
+
+    def _get_mysql_payload(self):
+        return {
+            'mysql_host':     self.txt_mysql_host.text().strip(),
+            'mysql_port':     self.spn_mysql_port.value(),
+            'mysql_user':     self.txt_mysql_user.text().strip(),
+            'mysql_password': self.txt_mysql_pass.text().strip(),
+            'mysql_database': self.txt_mysql_db.text().strip(),
+            'hora_backup':    self.spn_hora_backup.value(),
+        }
+
+    def _test_mysql(self):
+        payload = self._get_mysql_payload()
+        if not payload['mysql_host']:
+            toast(self, 'Ingrese el host MySQL', 'warning')
+            return
+
+        def _do():
+            return api.post('/api/cloud/config', payload)
+
+        worker = LoadWorker(_do)
+        worker.done.connect(lambda r: (
+            toast(self, r.get('mensaje', 'Conexión exitosa'), 'ok')
+            if r.get('ok')
+            else toast(self, r.get('error', 'Error'), 'error')
+        ))
+        worker.start()
+
+    def _save_mysql(self):
+        payload = self._get_mysql_payload()
+        if not payload['mysql_host']:
+            toast(self, 'Ingrese el host MySQL', 'warning')
+            return
+
+        def _do():
+            return api.post('/api/cloud/config', payload)
+
+        worker = LoadWorker(_do)
+        worker.done.connect(self._on_mysql_saved)
+        worker.start()
+
+    def _on_mysql_saved(self, result):
+        if result.get('ok'):
+            # Guardar también en config.json local para el cliente
+            c = cfg.load_config()
+            c.update({
+                'mysql_host':     self.txt_mysql_host.text().strip(),
+                'mysql_port':     self.spn_mysql_port.value(),
+                'mysql_user':     self.txt_mysql_user.text().strip(),
+                'mysql_password': self.txt_mysql_pass.text().strip(),
+                'mysql_database': self.txt_mysql_db.text().strip(),
+                'hora_backup':    self.spn_hora_backup.value(),
+            })
+            cfg.save_config(c)
+            toast(self, 'Configuración MySQL guardada correctamente', 'ok')
+            self._cargar_estado_cloud()
+        else:
+            toast(self, result.get('error', 'Error al guardar'), 'error')
+
+    def _backup_now(self):
+        toast(self, 'Iniciando backup...', 'info')
+
+        def _do():
+            return api.post('/api/cloud/backup/ejecutar', {})
+
+        worker = LoadWorker(_do)
+        worker.done.connect(lambda r: (
+            toast(self,
+                  f'Backup completo: {r.get("registros", 0)} registros', 'ok')
+            if r.get('ok')
+            else toast(self, r.get('error', 'Error en backup'), 'error')
+        ))
+        worker.start()
+
+    def _cargar_estado_cloud(self):
+        def _do():
+            return api.get('/api/cloud/backup/estado')
+
+        worker = LoadWorker(_do)
+        worker.done.connect(self._on_estado_cloud)
+        worker.start()
+
+        empresa = api.get_empresa()
+        if empresa and empresa.get('ruc'):
+            def _lic():
+                return api.get(f'/api/cloud/licencia/{empresa["ruc"]}')
+            wl = LoadWorker(_lic)
+            wl.done.connect(self._on_licencia)
+            wl.start()
+
+    def _on_estado_cloud(self, result):
+        if not result.get('ok'):
+            self.lbl_backup_estado.setText('No configurado')
+            return
+        ult = result.get('ultimo_backup') or {}
+        ok = ult.get('ok')
+        if ok is None:
+            self.lbl_backup_estado.setText('Sin backup ejecutado aún')
+        elif ok:
+            self.lbl_backup_estado.setText('✅ OK')
+            self.lbl_backup_estado.setStyleSheet('color: #2ea043;')
+        else:
+            self.lbl_backup_estado.setText(f'❌ {ult.get("error", "Error")}')
+            self.lbl_backup_estado.setStyleSheet('color: #da3633;')
+        self.lbl_backup_ultima.setText(ult.get('ultima_vez') or '—')
+        self.lbl_backup_registros.setText(str(ult.get('registros', '—')))
+
+    def _on_licencia(self, result):
+        if not result.get('ok'):
+            self.lbl_licencia.setText('Sin información')
+            return
+        valida = result.get('valida', False)
+        plan = result.get('plan', '—')
+        venc = result.get('fecha_vencimiento', '')
+        modo = result.get('modo', '')
+        if valida:
+            texto = f'✅ {plan.upper()} — vence {venc} ({modo})'
+            self.lbl_licencia.setStyleSheet('color: #2ea043;')
+        else:
+            texto = f'❌ {result.get("mensaje", "Sin licencia")}'
+            self.lbl_licencia.setStyleSheet('color: #da3633;')
+        self.lbl_licencia.setText(texto)
 
     def refresh(self):
-        pass
+        self._cargar_estado_cloud()

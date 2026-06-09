@@ -6,6 +6,123 @@ from ..database.models import CompraProveedor, Proveedor
 compras_bp = Blueprint('compras', __name__)
 
 
+@compras_bp.route('/importar-xml', methods=['POST'])
+def importar_xml():
+    """
+    Importa una o varias facturas de proveedores desde archivos XML del SRI.
+
+    Acepta:
+      - JSON: {"empresa_id": 1, "xmls": ["<?xml...", "<?xml..."]}
+      - Form + file upload: campo 'xml_files' con múltiples archivos .xml
+
+    Retorna lista de resultados por cada XML procesado.
+    """
+    from ..services.xml_parser import parsear_xml_comprobante
+
+    empresa_id = None
+    xmls = []
+
+    # Caso 1: JSON con lista de strings XML
+    if request.is_json:
+        data = request.get_json()
+        empresa_id = data.get('empresa_id')
+        xmls = data.get('xmls', [])
+
+    # Caso 2: multipart/form-data con archivos
+    elif request.files:
+        empresa_id = int(request.form.get('empresa_id', 0))
+        for f in request.files.getlist('xml_files'):
+            content = f.read().decode('utf-8', errors='replace')
+            xmls.append(content)
+
+    if not empresa_id:
+        return jsonify({'ok': False, 'error': 'empresa_id requerido'}), 400
+    if not xmls:
+        return jsonify({'ok': False, 'error': 'No se proporcionaron XMLs'}), 400
+
+    resultados = []
+    importados = 0
+    errores = 0
+
+    for i, xml_content in enumerate(xmls):
+        parsed = parsear_xml_comprobante(xml_content)
+
+        if not parsed['ok']:
+            errores += 1
+            resultados.append({'index': i, 'ok': False, 'error': parsed['error']})
+            continue
+
+        # Verificar si ya existe por número de documento o clave de acceso
+        existente = CompraProveedor.query.filter_by(
+            empresa_id=empresa_id,
+            numero_documento=parsed['numero_documento'],
+        ).first()
+
+        if existente:
+            resultados.append({
+                'index': i,
+                'ok': False,
+                'error': f'Documento {parsed["numero_documento"]} ya existe',
+                'numero_documento': parsed['numero_documento'],
+            })
+            errores += 1
+            continue
+
+        # Buscar o crear proveedor por RUC
+        proveedor = Proveedor.query.filter_by(
+            empresa_id=empresa_id,
+            identificacion=parsed['ruc_proveedor']
+        ).first()
+
+        if not proveedor:
+            proveedor = Proveedor(
+                empresa_id=empresa_id,
+                tipo_identificacion='04' if len(parsed['ruc_proveedor']) == 13 else '05',
+                identificacion=parsed['ruc_proveedor'],
+                razon_social=parsed['razon_social_proveedor'],
+            )
+            db.session.add(proveedor)
+            db.session.flush()
+
+        c = CompraProveedor(
+            empresa_id=empresa_id,
+            proveedor_id=proveedor.id,
+            tipo_documento=parsed['tipo_documento'],
+            numero_documento=parsed['numero_documento'],
+            numero_autorizacion=parsed['numero_autorizacion'],
+            fecha_emision=parsed['fecha_emision'],
+            ruc_proveedor=parsed['ruc_proveedor'],
+            razon_social_proveedor=parsed['razon_social_proveedor'],
+            subtotal_sin_iva=parsed['subtotal_sin_iva'],
+            subtotal_iva_0=parsed['subtotal_iva_0'],
+            subtotal_iva_12=parsed['subtotal_iva_12'],
+            iva=parsed['iva'],
+            total=parsed['total'],
+            xml_content=xml_content,
+        )
+        db.session.add(c)
+        db.session.flush()
+        importados += 1
+        resultados.append({
+            'index': i,
+            'ok': True,
+            'id': c.id,
+            'numero_documento': parsed['numero_documento'],
+            'proveedor': parsed['razon_social_proveedor'],
+            'total': parsed['total'],
+            'tipo': parsed['tipo_nombre'],
+        })
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'importados': importados,
+        'errores': errores,
+        'resultados': resultados,
+    })
+
+
 @compras_bp.route('/<int:empresa_id>', methods=['GET'])
 def listar(empresa_id):
     q = request.args.get('q', '')
