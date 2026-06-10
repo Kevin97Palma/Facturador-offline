@@ -298,7 +298,7 @@ class ComprasScreen(BaseScreen):
             'Facturas de Proveedores',
             'Registra compras y retenciones recibidas'
         )
-        lay.addWidget(hdr)
+        lay.addLayout(hdr)
 
         # Toolbar
         toolbar = QHBoxLayout()

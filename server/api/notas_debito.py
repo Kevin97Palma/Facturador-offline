@@ -56,9 +56,9 @@ def crear():
         numero=numero,
         clave_acceso=clave,
         fecha_emision=fecha_emision,
-        cod_doc_modificado=data.get('cod_doc_modificado', '01'),
+        tipo_doc_modificado=data.get('cod_doc_modificado', '01'),
         num_doc_modificado=data.get('num_doc_modificado', '').strip(),
-        fecha_emision_doc_sustento=datetime.strptime(data['fecha_emision_doc_sustento'], '%Y-%m-%d').date() if data.get('fecha_emision_doc_sustento') else fecha_emision,
+        fecha_doc_sustento=datetime.strptime(data['fecha_emision_doc_sustento'], '%Y-%m-%d').date() if data.get('fecha_emision_doc_sustento') else fecha_emision,
     )
     db.session.add(n)
     db.session.flush()
@@ -164,8 +164,8 @@ def _s(n):
 def _s_full(n):
     d = _s(n)
     d.update({
-        'cod_doc_modificado': n.cod_doc_modificado or '01',
-        'fecha_emision_doc_sustento': n.fecha_emision_doc_sustento.strftime('%Y-%m-%d') if n.fecha_emision_doc_sustento else '',
+        'cod_doc_modificado': n.tipo_doc_modificado or '01',
+        'fecha_emision_doc_sustento': n.fecha_doc_sustento.strftime('%Y-%m-%d') if n.fecha_doc_sustento else '',
         'fecha_autorizacion': n.fecha_autorizacion.strftime('%Y-%m-%d %H:%M:%S') if n.fecha_autorizacion else '',
         'xml_path': n.xml_path or '', 'xml_autorizado_path': n.xml_autorizado_path or '',
         'detalles': [{'id': det.id, 'razon': det.razon, 'valor': float(det.valor)} for det in n.detalles],

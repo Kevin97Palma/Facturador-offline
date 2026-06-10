@@ -243,6 +243,7 @@ class Retencion(db.Model):
     clave_acceso = db.Column(db.String(49))
     fecha_emision = db.Column(db.Date, nullable=False)
     periodo_fiscal = db.Column(db.String(7))  # MM/YYYY
+    total_retenido = db.Column(db.Numeric(12, 2), default=0)
     estado = db.Column(db.String(20), default='PENDIENTE')
     numero_autorizacion = db.Column(db.String(49))
     fecha_autorizacion = db.Column(db.DateTime)
@@ -272,7 +273,8 @@ class DetalleRetencion(db.Model):
     base_iva_doc = db.Column(db.Numeric(12, 2), default=0)
     total_doc = db.Column(db.Numeric(12, 2), default=0)
     codigo_retencion = db.Column(db.String(10), nullable=False)
-    tipo_retencion = db.Column(db.String(10), nullable=False)  # renta, iva
+    tipo_retencion = db.Column(db.String(10), nullable=False, default='renta')  # renta, iva
+    descripcion = db.Column(db.String(300))
     base_imponible = db.Column(db.Numeric(12, 2), nullable=False)
     porcentaje_retener = db.Column(db.Numeric(5, 2), nullable=False)
     valor_retenido = db.Column(db.Numeric(12, 2), nullable=False)
@@ -297,6 +299,7 @@ class NotaCredito(db.Model):
     subtotal_iva_0 = db.Column(db.Numeric(12, 2), default=0)
     subtotal_iva_12 = db.Column(db.Numeric(12, 2), default=0)
     iva_12 = db.Column(db.Numeric(12, 2), default=0)
+    iva_total = db.Column(db.Numeric(12, 2), default=0)
     total = db.Column(db.Numeric(12, 2), default=0)
     estado = db.Column(db.String(20), default='PENDIENTE')
     numero_autorizacion = db.Column(db.String(49))

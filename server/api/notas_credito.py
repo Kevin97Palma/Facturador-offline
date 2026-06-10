@@ -56,10 +56,10 @@ def crear():
         numero=numero,
         clave_acceso=clave,
         fecha_emision=fecha_emision,
-        motivo=data.get('motivo', '').strip(),
-        cod_doc_modificado=data.get('cod_doc_modificado', '01'),
+        motivo=data.get('motivo', '').strip() or 'Sin motivo',
+        tipo_doc_modificado=data.get('cod_doc_modificado', '01'),
         num_doc_modificado=data.get('num_doc_modificado', '').strip(),
-        fecha_emision_doc_sustento=datetime.strptime(data['fecha_emision_doc_sustento'], '%Y-%m-%d').date() if data.get('fecha_emision_doc_sustento') else fecha_emision,
+        fecha_doc_sustento=datetime.strptime(data['fecha_emision_doc_sustento'], '%Y-%m-%d').date() if data.get('fecha_emision_doc_sustento') else fecha_emision,
     )
     db.session.add(n)
     db.session.flush()
@@ -193,9 +193,9 @@ def _s(n):
 def _s_full(n):
     d = _s(n)
     d.update({
-        'cod_doc_modificado': n.cod_doc_modificado or '01',
+        'cod_doc_modificado': n.tipo_doc_modificado or '01',
         'num_doc_modificado': n.num_doc_modificado or '',
-        'fecha_emision_doc_sustento': n.fecha_emision_doc_sustento.strftime('%Y-%m-%d') if n.fecha_emision_doc_sustento else '',
+        'fecha_emision_doc_sustento': n.fecha_doc_sustento.strftime('%Y-%m-%d') if n.fecha_doc_sustento else '',
         'subtotal_sin_impuesto': float(n.subtotal_sin_impuesto or 0),
         'iva_total': float(n.iva_total or 0),
         'fecha_autorizacion': n.fecha_autorizacion.strftime('%Y-%m-%d %H:%M:%S') if n.fecha_autorizacion else '',

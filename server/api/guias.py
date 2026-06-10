@@ -52,23 +52,24 @@ def crear():
         usuario_id=data['usuario_id'],
         numero=numero,
         clave_acceso=clave,
+        fecha_emision=fecha_ini,
+        dir_partida=data.get('dir_partida', '').strip() or empresa.direccion,
         fecha_ini_transporte=fecha_ini,
         fecha_fin_transporte=fecha_fin,
         ruc_transportista=data['ruc_transportista'].strip(),
         razon_social_transportista=data['razon_social_transportista'].strip(),
-        placa=data.get('placa', '').strip(),
+        placa=data.get('placa', '').strip() or 'S/P',
     )
     db.session.add(g)
     db.session.flush()
 
     for dest_data in data.get('destinatarios', []):
         dest = DestinatarioGuia(
-            guia_id=g.id,
-            identificacion_destinatario=dest_data['identificacion_destinatario'].strip(),
-            razon_social_destinatario=dest_data['razon_social_destinatario'].strip(),
-            direccion_destinatario=dest_data.get('direccion_destinatario', '').strip(),
-            motivo_traslado=dest_data.get('motivo_traslado', '').strip(),
-            doc_aduanero_unico=dest_data.get('doc_aduanero_unico', '').strip(),
+            guia_remision_id=g.id,
+            identificacion=dest_data['identificacion_destinatario'].strip(),
+            razon_social=dest_data['razon_social_destinatario'].strip(),
+            direccion_destino=dest_data.get('direccion_destinatario', '').strip() or 'N/A',
+            motivo_traslado=dest_data.get('motivo_traslado', '').strip() or 'Traslado de mercadería',
             num_doc_sustento=dest_data.get('num_doc_sustento', '').strip(),
         )
         db.session.add(dest)
@@ -147,9 +148,9 @@ def descargar_pdf(id):
             'numero_autorizacion': g.numero_autorizacion or '',
         },
         'destinatarios': [{
-            'identificacion': d.identificacion_destinatario,
-            'razon_social': d.razon_social_destinatario,
-            'direccion': d.direccion_destinatario or '',
+            'identificacion': d.identificacion,
+            'razon_social': d.razon_social,
+            'direccion': d.direccion_destino or '',
             'motivo_traslado': d.motivo_traslado or '',
             'detalles': [{'codigo': det.codigo_interno or '', 'descripcion': det.descripcion,
                           'cantidad': float(det.cantidad)} for det in d.detalles],
@@ -185,11 +186,10 @@ def _s_full(g):
         'xml_path': g.xml_path or '', 'xml_autorizado_path': g.xml_autorizado_path or '',
         'destinatarios': [{
             'id': dest.id,
-            'identificacion_destinatario': dest.identificacion_destinatario,
-            'razon_social_destinatario': dest.razon_social_destinatario,
-            'direccion_destinatario': dest.direccion_destinatario or '',
+            'identificacion_destinatario': dest.identificacion,
+            'razon_social_destinatario': dest.razon_social,
+            'direccion_destinatario': dest.direccion_destino or '',
             'motivo_traslado': dest.motivo_traslado or '',
-            'doc_aduanero_unico': dest.doc_aduanero_unico or '',
             'num_doc_sustento': dest.num_doc_sustento or '',
             'detalles': [{
                 'id': det.id,

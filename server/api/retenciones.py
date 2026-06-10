@@ -70,10 +70,11 @@ def crear():
             cod_doc_sustento=det.get('cod_doc_sustento', '01'),
             num_doc_sustento=det.get('num_doc_sustento', '').strip(),
             fecha_emision_doc_sustento=datetime.strptime(det['fecha_emision_doc_sustento'], '%Y-%m-%d').date() if det.get('fecha_emision_doc_sustento') else fecha_emision,
-            codigo=det['codigo'].strip(),
+            codigo_retencion=det['codigo'].strip(),
+            tipo_retencion=det.get('tipo_retencion', 'renta'),
             descripcion=det.get('descripcion', '').strip(),
             base_imponible=float(det['base_imponible']),
-            porcentaje=float(det['porcentaje']),
+            porcentaje_retener=float(det['porcentaje']),
             valor_retenido=valor,
         )
         db.session.add(d)
@@ -150,9 +151,9 @@ def descargar_pdf(id):
             'numero_autorizacion': r.numero_autorizacion or '',
         },
         'detalles': [{
-            'codigo': d.codigo, 'descripcion': d.descripcion,
+            'codigo': d.codigo_retencion, 'descripcion': d.descripcion or '',
             'base_imponible': float(d.base_imponible),
-            'porcentaje': float(d.porcentaje),
+            'porcentaje': float(d.porcentaje_retener),
             'valor_retenido': float(d.valor_retenido),
         } for d in r.detalles],
     }
@@ -193,10 +194,10 @@ def _s_full(r):
             'cod_doc_sustento': det.cod_doc_sustento or '01',
             'num_doc_sustento': det.num_doc_sustento or '',
             'fecha_emision_doc_sustento': det.fecha_emision_doc_sustento.strftime('%Y-%m-%d') if det.fecha_emision_doc_sustento else '',
-            'codigo': det.codigo,
+            'codigo': det.codigo_retencion,
             'descripcion': det.descripcion or '',
             'base_imponible': float(det.base_imponible),
-            'porcentaje': float(det.porcentaje),
+            'porcentaje': float(det.porcentaje_retener),
             'valor_retenido': float(det.valor_retenido),
         } for det in r.detalles],
     })

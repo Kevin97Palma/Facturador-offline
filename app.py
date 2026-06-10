@@ -15,12 +15,18 @@ def _ensure_dirs():
 
 def _start_server():
     import threading
+    import time
+    import requests
     from server.main import run_server
     t = threading.Thread(target=run_server, args=('0.0.0.0', 5000), daemon=True)
     t.start()
-    # Give the server a moment to start
-    import time
-    time.sleep(1.5)
+    # Wait until the server responds, up to ~10 seconds
+    for _ in range(40):
+        try:
+            requests.get('http://localhost:5000/api/auth/empresas', timeout=0.5)
+            return
+        except Exception:
+            time.sleep(0.25)
 
 
 def main():
