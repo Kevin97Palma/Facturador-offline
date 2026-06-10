@@ -61,3 +61,6 @@ AmeliaRestServer-master-amelia.zip
 
 # Settings locales de Claude
 .claude/
+
+venv/
+data/*.db
