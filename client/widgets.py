@@ -63,6 +63,11 @@ def set_estado_item(table: QTableWidget, row: int, col: int, estado: str):
     table.setItem(row, col, item)
 
 
+# Mantiene vivos los QThread hasta que terminan; si el recolector de basura
+# destruye un QThread en ejecución, Qt aborta el proceso completo.
+_active_workers = set()
+
+
 class LoadWorker(QThread):
     done = pyqtSignal(object)
 
@@ -71,6 +76,11 @@ class LoadWorker(QThread):
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
+        _active_workers.add(self)
+        self.finished.connect(self._cleanup)
+
+    def _cleanup(self):
+        _active_workers.discard(self)
 
     def run(self):
         try:
