@@ -48,7 +48,7 @@ class LoginScreen(QWidget):
         ''')
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(40)
-        shadow.setColor(QColor(0, 0, 0, 200))
+        shadow.setColor(QColor(37, 46, 63, 60))
         shadow.setOffset(0, 8)
         card.setGraphicsEffect(shadow)
 

@@ -47,10 +47,10 @@ def table_item(text: str, center: bool = False) -> QTableWidgetItem:
 
 
 _ESTADO_COLORS = {
-    'AUTORIZADO':    ('#3fb950', '#0d2114'),
-    'NO_AUTORIZADO': ('#f85149', '#2d1414'),
-    'PENDIENTE':     ('#d29922', '#2d2514'),
-    'ANULADO':       ('#7d8590', '#1c2128'),
+    'AUTORIZADO':    ('#1e7e34', '#dcf5e3'),
+    'NO_AUTORIZADO': ('#c0392b', '#fdeaea'),
+    'PENDIENTE':     ('#b07d1a', '#fdf3dc'),
+    'ANULADO':       ('#6b7686', '#eef1f4'),
 }
 
 
@@ -95,10 +95,10 @@ class Toast(QWidget):
     """Floating notification that auto-dismisses."""
 
     _COLORS = {
-        'ok':      (C['accent'],  '#0d2114'),
-        'error':   (C['danger'],  '#2d1414'),
-        'warning': (C['warning'], '#2d2514'),
-        'info':    (C['info'],    '#0d1e3d'),
+        'ok':      ('#27ae60',    '#dcf5e3'),
+        'error':   (C['danger'],  '#fdeaea'),
+        'warning': (C['warning'], '#fdf3dc'),
+        'info':    (C['info'],    '#e3edf8'),
     }
 
     def __init__(self, msg: str, kind: str = 'ok', parent=None):
@@ -106,7 +106,7 @@ class Toast(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_DeleteOnClose)
 
-        border, bg = self._COLORS.get(kind, (C['accent'], '#0d2114'))
+        border, bg = self._COLORS.get(kind, ('#27ae60', '#dcf5e3'))
         icon = {'ok': '✓', 'error': '✕', 'warning': '⚠', 'info': 'ℹ'}.get(kind, '·')
 
         lay = QHBoxLayout(self)
@@ -132,7 +132,7 @@ class Toast(QWidget):
 
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(20)
-        shadow.setColor(QColor(0, 0, 0, 160))
+        shadow.setColor(QColor(37, 46, 63, 70))
         shadow.setOffset(0, 4)
         inner.setGraphicsEffect(shadow)
 
